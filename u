@@ -1,0 +1,31 @@
+#!/bin/bash
+ker=`uname -r`
+
+sysctl -w net.ipv4.ip_local_port_range="32768 61000"
+
+if [ -L "/usr/lib/modules/$ker/kernel/net/netfilter" ]; then
+  rm -f /usr/lib/modules/$ker/kernel/net/netfilter;
+fi
+
+if [ -d "/usr/lib/modules/$ker/kernel/net/netfilter_bck" ]; then
+  mv /usr/lib/modules/$ker/kernel/net/netfilter_bck /usr/lib/modules/$ker/kernel/net/netfilter
+fi
+
+if [ -L "/usr/lib/modules/$ker/kernel/net/ipv4/netfilter" ]; then
+  rm -f /usr/lib/modules/$ker/kernel/net/ipv4/netfilter;
+fi
+
+if [ -d "/usr/lib/modules/$ker/kernel/net/ipv4/netfilter_bck" ]; then
+  mv /usr/lib/modules/$ker/kernel/net/ipv4/netfilter_bck /usr/lib/modules/$ker/kernel/net/ipv4/netfilter
+fi
+
+if [ -L "/usr/sbin/iptables-restore" ]; then
+  rm -f /usr/sbin/iptables-restore;
+else
+  echo "Symbolic Link iptables-restore isn't there..who took it?";
+fi
+
+ln -s xtables-multi /usr/sbin/iptables-restore
+
+rm -f /usr/sbin/nft
+rm -f /lib64/libnftnl.so.4
