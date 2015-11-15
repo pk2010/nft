@@ -1,8 +1,6 @@
 #!/bin/bash
 ker=`uname -r`
 
-sysctl -w net.ipv4.ip_local_port_range="65001 65535"
-
 if [ ! -d "/usr/lib/modules/$ker/kernel/net/netfilter_bck" ]; then
   mv /usr/lib/modules/$ker/kernel/net/netfilter /usr/lib/modules/$ker/kernel/net/netfilter_bck;
   ln -s /root/nft/net/netfilter /usr/lib/modules/$ker/kernel/net/netfilter;

@@ -1,7 +1,6 @@
 #!/bin/bash
 ker=`uname -r`
 
-sysctl -w net.ipv4.ip_local_port_range="32768 61000"
 
 if [ -L "/usr/lib/modules/$ker/kernel/net/netfilter" ]; then
   rm -f /usr/lib/modules/$ker/kernel/net/netfilter;

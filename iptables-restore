@@ -2,6 +2,7 @@
 <?php
 $lastport="";
 $lastallips="";
+
 @unlink("root/nft/.cache");
 @unlink("root/nft/.ruleset");
 $rulehead="flush ruleset\ntable ip nat {\nchain prerouting {\ntype nat hook prerouting priority 0; policy accept;\n";
