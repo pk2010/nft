@@ -2,9 +2,10 @@
 <?php
 $lastport="";
 $lastallips="";
-
+$portrange="";
 @unlink("root/nft/.cache");
 @unlink("root/nft/.ruleset");
+@unlink("root/nft/.ports");
 $rulehead="flush ruleset\ntable ip nat {\nchain prerouting {\ntype nat hook prerouting priority 0; policy accept;\n";
 $rulefoot="}\nchain postrouting {\ntype nat hook postrouting priority 0; policy accept;\nmasquerade\n}\n}\n";
 
@@ -28,6 +29,7 @@ fwrite($ruleset,$rulehead);
 			if($lastallips!=$barr[3]){
 				if($lastallips!=""){
 					fwrite($ruleset,"tcp dport ".$sport."-".$lastport." ip saddr {".$lastallips."} dnat tcp dport map {".rtrim($ipmapstr,",")."} : tcp dport map {".rtrim($portmapstr,",")."}\n");
+					$portrange.=$sport."-".$lastport." ";
 				}
 				$sport=$barr[9];
 				$ipmapstr="";
@@ -40,12 +42,17 @@ fwrite($ruleset,$rulehead);
          }
     }
     if (!feof($stdin))echo "Error: unexpected fgets() fail\n";
-if($ipmapstr!="")fwrite($ruleset,"tcp dport ".$sport."-".$lastport." ip saddr {".$lastallips."} dnat tcp dport map {".rtrim($ipmapstr,",\n")."} : tcp dport map {".rtrim($portmapstr,",\n")."}\n");
+if($ipmapstr!=""){
+	fwrite($ruleset,"tcp dport ".$sport."-".$lastport." ip saddr {".$lastallips."} dnat tcp dport map {".rtrim($ipmapstr,",\n")."} : tcp dport map {".rtrim($portmapstr,",\n")."}\n");
+	$portrange.=$sport."-".$lastport." ";
+}	
 fwrite($ruleset,$rulefoot);
+file_put_contents("/root/nft/.ports",trim($portrange));
 cls:
 if(is_resource($ruleset))fclose($ruleset);
 if(is_resource($stdin))fclose($stdin);
 if(is_resource($cachefile))fclose($cachefile);
+exec("/root/nft/cli/pkfmap /root/nft/.cache -c 0 65535");
 exec("nft -f /root/nft/.ruleset");
 
 exec("sysctl -w net.netfilter.nf_conntrack_tcp_loose=0");
