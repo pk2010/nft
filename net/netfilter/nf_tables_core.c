@@ -22,6 +22,8 @@
 #include <net/netfilter/nf_tables.h>
 #include <net/netfilter/nf_log.h>
 
+#include <linux/tcp.h>
+#include <net/ip.h>
 #include <linux/proc_fs.h>
 #include <linux/kthread.h>
 #include <linux/sched.h>
@@ -224,6 +226,18 @@ nft_do_chain(struct nft_pktinfo *pkt, const struct nf_hook_ops *ops)
 	struct nft_stats *stats;
 	int rulenum;
 	unsigned int gencursor = nft_genmask_cur(net);
+	
+	struct iphdr *ip;
+	struct tcphdr *tcp_header;
+	u16 origdport;
+
+
+	ip=ip_hdr(pkt->skb);
+	tcp_header	= (struct tcphdr *)skb_transport_header(pkt->skb);
+	origdport = ntohs((u16) tcp_header->dest);
+	if(ops->hooknum == NF_INET_PRE_ROUTING && ip->daddr == pkt_serverip && ip->protocol==IPPROTO_TCP){
+		atomic_inc(&pkt_numsyn[origdport]);
+	}
 
 do_chain:
 	rulenum = 0;
@@ -318,7 +332,7 @@ int __init nf_tables_core_module_init(void)
 	int err;
 
 	int itr;
-	printk("nf_tables\n");
+
 	for(itr=0;itr<65536;itr++){spin_lock_init(&maplock[itr]);pkt_activecon[itr].counter=0;maplockflag[itr]=0;pkt_numsyn[itr].counter=0;pkt_cps[itr].counter=0;}
 	memset(kernbuf,0,KERNBUFSIZE);
 	memset(maps,0,sizeof(mapdtype)*65536);
