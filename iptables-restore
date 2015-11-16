@@ -11,6 +11,7 @@ $rulefoot="}\nchain postrouting {\ntype nat hook postrouting priority 0; policy 
 
 $ipmapstr="";
 $portmapstr="";
+$sport="";
 $stdin = fopen('php://stdin', 'r');
 $cachefile = fopen("/root/nft/.cache",'w');
 $ruleset = fopen("/root/nft/.ruleset",'w');
@@ -26,26 +27,24 @@ fwrite($ruleset,$rulehead);
 			foreach($allips as $ip) fwrite($cachefile," ".$ip);
 			fwrite($cachefile,"\n");
 //ruleset related
-			if($lastallips!=$barr[3]){
-				if($lastallips!=""){
-					fwrite($ruleset,"tcp dport ".$sport."-".$lastport." ip saddr {".$lastallips."} dnat tcp dport map {".rtrim($ipmapstr,",")."} : tcp dport map {".rtrim($portmapstr,",")."}\n");
-					$portrange.=$sport."-".$lastport." ";
-				}
-				$sport=$barr[9];
-				$ipmapstr="";
-				$portmapstr="";
-			}
+			if($sport == "") $sport=$barr[9];
 			$ipmapstr .= $barr[9].":".$dr[0].",\n";
 			$portmapstr .= $barr[9].":".trim($dr[1]).",\n";
 			$lastallips = $barr[3];
 			$lastport = $barr[9];
          }
+		 if(strpos($buffer,"#end")!==false){
+			$thisrule = "tcp dport ".$sport."-".$lastport." ip saddr {".$lastallips."} dnat tcp dport map {".rtrim($ipmapstr,",")."} : tcp dport map {".rtrim($portmapstr,",")."}";
+			$portrange.=$sport."-".$lastport." ";
+			$sport="";
+			$ipmapstr="";
+			$portmapstr="";
+			fwrite($ruleset,$thisrule."\n");
+
+		 }
     }
     if (!feof($stdin))echo "Error: unexpected fgets() fail\n";
-if($ipmapstr!=""){
-	fwrite($ruleset,"tcp dport ".$sport."-".$lastport." ip saddr {".$lastallips."} dnat tcp dport map {".rtrim($ipmapstr,",\n")."} : tcp dport map {".rtrim($portmapstr,",\n")."}\n");
-	$portrange.=$sport."-".$lastport." ";
-}	
+
 fwrite($ruleset,$rulefoot);
 file_put_contents("/root/nft/.ports",trim($portrange));
 cls:
