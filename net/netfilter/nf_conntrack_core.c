@@ -420,7 +420,7 @@ bool nf_ct_delete(struct nf_conn *ct, u32 portid, int report)
 		origdport = ntohs((u16) ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.u.tcp.port);
 		origsport = ntohs((u16) ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.l3num);
 		atomic_dec(&pkt_activecon[origdport]);
-		printk("--%d.%d.%d.%d:%d > %d.%d.%d.%d:%d[%d]\n",NIPQUAD(origsip),origsport,NIPQUAD(origdip),origdport,atomic_read(&pkt_activecon[origdport]));
+		//printk("--%d.%d.%d.%d:%d > %d.%d.%d.%d:%d[%d]\n",NIPQUAD(origsip),origsport,NIPQUAD(origdip),origdport,atomic_read(&pkt_activecon[origdport]));
 	}
 	
 	tstamp = nf_conn_tstamp_find(ct);
@@ -648,7 +648,7 @@ __nf_conntrack_confirm(struct sk_buff *skb)
 		origdport = ntohs((u16) ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.u.tcp.port);
 		origsport = ntohs((u16) ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.l3num);
 		atomic_inc(&pkt_activecon[origdport]);
-		printk("++%d.%d.%d.%d:%d > %d.%d.%d.%d:%d[%d]\n",NIPQUAD(origsip),origsport,NIPQUAD(origdip),origdport,atomic_read(&pkt_activecon[origdport]));
+		//printk("++%d.%d.%d.%d:%d > %d.%d.%d.%d:%d[%d]\n",NIPQUAD(origsip),origsport,NIPQUAD(origdip),origdport,atomic_read(&pkt_activecon[origdport]));
 	}
 	
 	do {
