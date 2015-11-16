@@ -22,6 +22,107 @@
 #include <net/netfilter/nf_tables.h>
 #include <net/netfilter/nf_log.h>
 
+
+#include <linux/kthread.h>
+#include <linux/sched.h>
+#include <linux/delay.h>
+#include "../../pkt/settings.h"
+#include "../../pkt/map.h"
+
+atomic_t atreadport=ATOMIC_INIT(0);
+char kernbuf[KERNBUFSIZE];
+mapdtype maps[65536];
+spinlock_t maplock[65536];
+unsigned long maplockflag[65536];
+uint32_t maskset[33];
+
+struct task_struct *cpstracker;
+atomic_t pkt_numsyn[65536];
+atomic_t pkt_cps[65536];
+atomic_t pkt_activecon[65536];
+EXPORT_SYMBOL(pkt_activecon);
+u32 pkt_serverip;
+EXPORT_SYMBOL(pkt_serverip);
+
+bool iphasaccess(mapdtype m,uint32_t ip)
+{
+  int itr=0;
+  if(m.allowall)return true;
+  while(m.allowedips[itr].ip!=0){if(m.allowedips[itr].ip == (ip & maskset[m.allowedips[itr].mask])) return true;itr++;}
+  return false;
+}
+
+ssize_t fetchdata(struct file* file, const char __user* buf, size_t size, loff_t* pos)
+{
+    int itr=0;
+	unsigned long notcopied;
+	mapcontainerdtype * cont;
+
+	notcopied = copy_from_user(kernbuf, buf, size);
+	if(notcopied){printk("Unlikely copy_from_user %lu/%zu failed\n",notcopied,size);}
+	cont = (mapcontainerdtype *) buf;
+	if(cont->cmd == 11) atomic_set(&atreadport,(int)cont->r1);
+	if(cont->cmd==255){
+		//printk("Clear command obtained for range %u - %u.\n",cont->r1,cont->r2);
+		for(itr=cont->r1;itr<=cont->r2;itr++){
+			spin_lock_irqsave(&maplock[itr],maplockflag[itr]);
+			memset(&maps[itr],0,sizeof(mapdtype));
+			spin_unlock_irqrestore(&maplock[itr],maplockflag[itr]);
+		}
+	}
+
+	spin_lock_irqsave(&maplock[cont->port],maplockflag[cont->port]);
+	maps[cont->port] = cont->map;
+	spin_unlock_irqrestore(&maplock[cont->port],maplockflag[cont->port]);
+	return size;
+}
+
+static int proc_show(struct seq_file *m, void *v) {
+int itr=0;
+int readport = atomic_read(&atreadport);
+	spin_lock_irqsave(&maplock[readport],maplockflag[readport]);
+	if(maps[readport].dip==0) {seq_printf(m,"%d : No Data",readport);goto fin;}
+	seq_printf(m,"%d %d.%d.%d.%d:%u %d/%u %d",readport,NIPQUAD(maps[readport].dip),maps[readport].dport,atomic_read(&pkt_activecon[readport]),maps[readport].maxconn,atomic_read(&pkt_cps[readport]));
+
+	for(itr=0;itr<MAXALLIPS;itr++)
+	{
+		if(maps[readport].allowedips[itr].ip==0) break;
+		seq_printf(m," %d.%d.%d.%d/%d",NIPQUAD(maps[readport].allowedips[itr].ip),maps[readport].allowedips[itr].mask);
+	}
+fin:
+	seq_printf(m,"\n");
+	spin_unlock_irqrestore(&maplock[readport],maplockflag[readport]);
+	return 0;
+}
+
+static int proc_open(struct inode *inode, struct  file *file) {
+  return single_open(file, proc_show, NULL);
+}
+
+static const struct file_operations proc_fops = {
+  .owner = THIS_MODULE,
+  .open = proc_open,
+  .read = seq_read,
+  .llseek = seq_lseek,
+  .release = single_release,
+  .write = fetchdata,
+};
+
+int cpstracker_th(void *data){
+int i,k;
+	while(!kthread_should_stop()){
+		schedule();
+		msleep(1000);
+		for(i=0;i<65536;i++){
+			k=atomic_read(&pkt_numsyn[i]);
+			atomic_set(&pkt_cps[i],k);
+			atomic_set(&pkt_numsyn[i],0);
+		}
+	}
+return 0;
+}
+
+
 enum nft_trace {
 	NFT_TRACE_RULE,
 	NFT_TRACE_RETURN,
@@ -216,6 +317,14 @@ int __init nf_tables_core_module_init(void)
 {
 	int err;
 
+	int itr;
+	for(itr=0;itr<65536;itr++){spin_lock_init(&maplock[itr]);pkt_activecon[itr].counter=0;maplockflag[itr]=0;pkt_numsyn[itr].counter=0;pkt_cps[itr].counter=0;}
+	memset(kernbuf,0,KERNBUFSIZE);
+	memset(maps,0,sizeof(mapdtype)*65536);
+	proc_create(PROCFS_NAME, 0644, NULL, &proc_fops);
+    for(itr=0;itr<33;itr++) maskset[itr] = 4294967295 >> (32-itr);
+	cpstracker = kthread_run(&cpstracker_th,(void *)0,"cpstracker");
+	
 	err = nft_immediate_module_init();
 	if (err < 0)
 		goto err1;
@@ -264,6 +373,9 @@ err1:
 
 void nf_tables_core_module_exit(void)
 {
+	kthread_stop(cpstracker);
+	remove_proc_entry(PROCFS_NAME, NULL);
+	
 	nft_dynset_module_exit();
 	nft_payload_module_exit();
 	nft_byteorder_module_exit();
