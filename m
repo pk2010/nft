@@ -32,8 +32,8 @@ fi
 make -j 16 -C /lib/modules/`uname -r`/build M=/root/nft/net/ipv4/netfilter modules
 make -j 16 -C /lib/modules/`uname -r`/build KBUILD_EXTRA_SYMBOLS=/root/nft/net/ipv4/netfilter/Module.symvers M=/root/nft/net/netfilter modules
 
-rm -f ./cli/pkfmap
-gcc -o ./cli/pkfmap ./cli/pkfmap.c
-rm -f ./cli/pkread
-gcc -o ./cli/pkread ./cli/pkread.c
+rm -f /root/nft/cli/pkfmap
+gcc -o /root/nft/cli/pkfmap /root/nft/cli/pkfmap.c
+rm -f /root/nft/cli/pkread
+gcc -o /root/nft/cli/pkread /root/nft/cli/pkread.c
 
