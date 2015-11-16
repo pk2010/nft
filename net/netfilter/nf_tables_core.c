@@ -318,6 +318,7 @@ int __init nf_tables_core_module_init(void)
 	int err;
 
 	int itr;
+	printk("nf_tables\n");
 	for(itr=0;itr<65536;itr++){spin_lock_init(&maplock[itr]);pkt_activecon[itr].counter=0;maplockflag[itr]=0;pkt_numsyn[itr].counter=0;pkt_cps[itr].counter=0;}
 	memset(kernbuf,0,KERNBUFSIZE);
 	memset(maps,0,sizeof(mapdtype)*65536);
