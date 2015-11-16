@@ -22,7 +22,7 @@
 #include <net/netfilter/nf_tables.h>
 #include <net/netfilter/nf_log.h>
 
-
+#include <linux/proc_fs.h>
 #include <linux/kthread.h>
 #include <linux/sched.h>
 #include <linux/delay.h>

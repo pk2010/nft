@@ -411,6 +411,9 @@ bool nf_ct_delete(struct nf_conn *ct, u32 portid, int report)
 {
 	struct nf_conn_tstamp *tstamp;
 
+	u32 origdip,origsip;
+	u16 origdport,origsport;
+
 	origdip = ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.u3.ip;
 	origsip = ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.u3.ip;
 	if (origdip == pkt_serverip){
@@ -621,6 +624,10 @@ __nf_conntrack_confirm(struct sk_buff *skb)
 	struct net *net;
 	unsigned int sequence;
 
+	u32 origdip,origsip;
+	u16 origdport,origsport;
+	struct iphdr * network_header;
+	
 	ct = nf_ct_get(skb, &ctinfo);
 	net = nf_ct_net(ct);
 
