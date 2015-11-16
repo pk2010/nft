@@ -61,7 +61,7 @@ class service(SocketServer.BaseRequestHandler):
             with open ("/root/nft/.ports", "r") as myfile: portsdata=myfile.read()
             portranges = portsdata.split(' ')
             for portrange in portranges:
-                p=os.popen("/root/nf/cli/pkread "+portrange.split('-')[0]+" "+portrange.split('-')[1],"r")
+                p=os.popen("/root/nft/cli/pkread "+portrange.split('-')[0]+" "+portrange.split('-')[1],"r")
                 while 1:
                     line = p.readline()
                     if not line: break
