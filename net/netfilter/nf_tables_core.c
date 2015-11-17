@@ -111,13 +111,12 @@ static const struct file_operations proc_fops = {
 };
 
 int cpstracker_th(void *data){
-int i,k;
+int i;
 	while(!kthread_should_stop()){
 		schedule();
 		msleep(1000);
 		for(i=0;i<65536;i++){
-			k=atomic_read(&pkt_numsyn[i]);
-			atomic_set(&pkt_cps[i],k);
+			atomic_set(&pkt_cps[i],atomic_read(&pkt_numsyn[i]));
 			atomic_set(&pkt_numsyn[i],0);
 		}
 	}
