@@ -9,7 +9,7 @@ $portrange="";
 @unlink("/root/nft/.tcr");
 $tcrhead="tc qdisc del dev eth0 root > /dev/null || true
 tc qdisc add dev eth0 root handle 1: htb default 1
-tc class add dev eth0 parent 1: classid 1:1 htb rate 8mbit burst 15k\n";
+tc class add dev eth0 parent 1: classid 1:1 htb rate 100mbit burst 15k\n";
 $rulehead="flush ruleset\ntable ip nat {\nchain prerouting {\ntype nat hook prerouting priority 0; policy accept;\n";
 $rulefoot="}\nchain postrouting {\ntype nat hook postrouting priority 0; policy accept;\nmasquerade\n}\n}\n";
 
@@ -63,6 +63,7 @@ if(is_resource($cachefile))fclose($cachefile);
 exec("/root/nft/cli/pkfmap /root/nft/.cache -c 0 65535");
 exec("nft -f /root/nft/.ruleset");
 exec("/bin/bash /root/nft/.tcr");
+#exec("echo 1 > /sys/module/sch_htb/parameters/htb_rate_est");
 exec("sysctl -w net.netfilter.nf_conntrack_tcp_loose=0");
 exec("sysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=1");
 exec("sysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=120");
