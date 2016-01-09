@@ -44,7 +44,7 @@ fwrite($ruleset,$rulehead);
          }
 		 if(strpos($buffer,"#end")!==false){
 			if($speedlimit != "0") {
-			$multiplelimit = floatval($speedlimit)*($lastport-$sport);
+			$multiplelimit = floatval($speedlimit)*($lastport-$sport+1);
 				fwrite($tcr,"tc class add dev eth0 parent 1: classid 1:".$sport." htb rate ".$multiplelimit."mbit burst 15k\ntc filter add dev eth0 parent 1: protocol ip prio 1 basic match 'cmp(u16 at 0 layer transport gt ".($sport-1).") and cmp(u16 at 0 layer transport lt ".($lastport+1).")' flowid 1:".$sport."\n");
 			}
 			$thisrule = "tcp dport ".$sport."-".$lastport." ip saddr {".$lastallips."} dnat tcp dport map {".rtrim($ipmapstr,",")."} : tcp dport map {".rtrim($portmapstr,",")."}";
