@@ -32,7 +32,7 @@ fwrite($ruleset,$rulehead);
 			fwrite($cachefile,$barr[9]." ".$dr[0]." ".trim($dr[1])." ".substr(trim($barr[17]),1,-1)." 0");
 			$newspeedlimit=substr(trim($barr[17]),1,-1);
 			if($newspeedlimit != "0") {
-				fwrite($tcr,"tc class add dev eth0 parent 1: classid 1:".$barr[9]." htb rate ".$newspeedlimit." burst 15k\ntc filter add dev eth0 parent 1: protocol ip prio 1 basic match 'cmp(u16 at 0 layer transport gt ".($barr[9]-1).") and cmp(u16 at 0 layer transport lt ".($barr[9]+1).")' flowid 1:".$barr[9]."\n");
+				//fwrite($tcr,"tc class add dev eth0 parent 1: classid 1:".$barr[9]." htb rate ".$newspeedlimit." burst 15k\ntc filter add dev eth0 parent 1: protocol ip prio 1 basic match 'cmp(u16 at 0 layer transport gt ".($barr[9]-1).") and cmp(u16 at 0 layer transport lt ".($barr[9]+1).")' flowid 1:".$barr[9]."\n");
 			}
 			foreach($allips as $ip) fwrite($cachefile," ".$ip);
 			fwrite($cachefile,"\n");
@@ -43,9 +43,10 @@ fwrite($ruleset,$rulehead);
 			$lastport = $barr[9];
          }
 		 if(strpos($buffer,"#end")!==false){
-			//if($speedlimit != "0") {
-				//fwrite($tcr,"tc class add dev eth0 parent 1: classid 1:".$sport." htb rate ".$speedlimit." burst 15k\ntc filter add dev eth0 parent 1: protocol ip prio 1 basic match 'cmp(u16 at 0 layer transport gt ".($sport-1).") and cmp(u16 at 0 layer transport lt ".($lastport+1).")' flowid 1:".$sport."\n");
-			//}
+			if($speedlimit != "0") {
+			$multiplelimit = floatval($speedlimit)*($lastport-$sport);
+				fwrite($tcr,"tc class add dev eth0 parent 1: classid 1:".$sport." htb rate ".$multiplelimit."mbit burst 15k\ntc filter add dev eth0 parent 1: protocol ip prio 1 basic match 'cmp(u16 at 0 layer transport gt ".($sport-1).") and cmp(u16 at 0 layer transport lt ".($lastport+1).")' flowid 1:".$sport."\n");
+			}
 			$thisrule = "tcp dport ".$sport."-".$lastport." ip saddr {".$lastallips."} dnat tcp dport map {".rtrim($ipmapstr,",")."} : tcp dport map {".rtrim($portmapstr,",")."}";
 			$portrange.=$sport."-".$lastport." ";
 			$sport="";
